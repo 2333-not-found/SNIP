@@ -52,6 +52,7 @@ Installation
 * To ensure that pastes with an expiration set get cleaned up, define the cron key in the config and set up a cronjob, for example:
   * `*/5 * * * * curl --silent http://yoursite.com/cron/[key]`
 * If you encounter errors with stylesheets and paths, make sure your base_url config value is not empty (see [here](https://codeigniter.com/userguide3/installation/upgrade_303.html)).
+* If SNIP is published through a reverse proxy (including a sub-directory such as `https://example.com/snip/`), set `$config['base_url'] = 'auto';` in `application/config/snip.php` and make your proxy send `X-Forwarded-Proto`, `X-Forwarded-Host` and, for sub-directories, `X-Forwarded-Prefix`. See `doc/webserver_sampleconfigs/nginx-site.conf`.
 * Be sure to also copy the .htaccess file when you move files around. This is a hidden file and easily overlooked.
 
 

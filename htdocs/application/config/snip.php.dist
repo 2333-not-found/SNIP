@@ -50,8 +50,53 @@ $config['site_description'] = '';
  *
  * Set the base URL of SNIP. WITH trailing slash!
  *
+ * Use 'auto' to build the URL from the current request. This is the
+ * recommended setting when SNIP runs behind a reverse proxy (nginx, Caddy,
+ * Traefik, a tunnel, ...), because the same installation can then be used
+ * both through its internal address and through the public address.
+ *
+ * In 'auto' mode the following headers are used when the direct peer is
+ * trusted: X-Forwarded-Proto, X-Forwarded-Host, X-Forwarded-Port and
+ * X-Forwarded-Prefix.
+ *
+ * Examples:
+ *   $config['base_url'] = 'https://mywebsite.com/';   // fixed URL
+ *   $config['base_url'] = 'https://mywebsite.com/snip/'; // fixed sub-directory
+ *   $config['base_url'] = 'auto';                     // detect per request
  */
-$config['base_url'] = 'https://mywebsite.com/';
+$config['base_url'] = 'auto';
+
+
+/**
+ * Trusted reverse proxies for base_url detection
+ *
+ * Comma separated list of IP addresses / CIDR ranges of the proxies whose
+ * X-Forwarded-* headers may be trusted. Leave empty to trust every peer.
+ *
+ * Only leave this empty if SNIP itself cannot be reached from untrusted
+ * clients (for example because it listens on 127.0.0.1 only). If SNIP is
+ * directly reachable, list your proxy instead, e.g.:
+ *
+ *   $config['base_url_trusted_proxies'] = '127.0.0.1,::1';
+ *   $config['base_url_trusted_proxies'] = '127.0.0.1,10.0.0.0/8,172.16.0.0/12';
+ */
+$config['base_url_trusted_proxies'] = '';
+
+
+/**
+ * Optional static path prefix
+ *
+ * Only needed if the reverse proxy cannot send X-Forwarded-Prefix and SNIP
+ * is published below a sub-directory, e.g. '/snip'. This value is applied
+ * to internal requests as well, so X-Forwarded-Prefix is preferable when
+ * both internal and public access must work.
+ */
+$config['base_url_path'] = '';
+
+// Resolve 'auto' (fixed URLs are returned unchanged). The helper is kept
+// outside this file so that this file stays easy to replace on upgrades.
+require_once APPPATH.'helpers/base_url_helper.php';
+$config['base_url'] = snip_resolve_base_url($config);
 
 
 /**

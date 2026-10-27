@@ -917,8 +917,28 @@ class Carabiner {
 			case 'css':
 			
 				$this->_load('cssmin');
-				
-				$rel = ( $this->isURL($file_ref) ) ? $file_ref : dirname($this->style_uri.$file_ref).'/';
+
+				if ( $this->isURL($file_ref) )
+				{
+					$rel = $file_ref;
+				}
+				elseif ( $this->isURL($this->cache_dir) || $this->isURL($this->style_dir) )
+				{
+					// Non-standard configuration: fall back to the previous
+					// absolute-URL behaviour.
+					$rel = dirname($this->style_uri.$file_ref).'/';
+				}
+				else
+				{
+					// The combined/minified stylesheet is served from cache_dir,
+					// not from style_dir. Express url(...) references relative to
+					// the cache location so that no host name or sub-directory
+					// prefix is baked into the cached file. This keeps one cached
+					// CSS file usable for both internal and public access.
+					$rel = $this->_relative_uri($this->cache_dir, dirname($this->style_dir.$file_ref));
+					$rel = ($rel === '') ? './' : $rel.'/';
+				}
+
 				$this->CI->cssmin->config(array('relativePath'=>$rel));
 
 				$contents = $this->_get_contents( $ref );
@@ -927,6 +947,66 @@ class Carabiner {
 			break;
 		}
 	
+	}
+
+
+	/**
+	* Build a relative URI from one FCPATH-relative directory to another.
+	*
+	* @access	private
+	* @param	String	$from_dir	directory the cached asset is served from
+	* @param	String	$to_dir		directory that contains the referenced asset
+	* @return	String				relative path without a trailing slash
+	*/
+	private function _relative_uri($from_dir, $to_dir)
+	{
+		$from = $this->_uri_parts($from_dir);
+		$to   = $this->_uri_parts($to_dir);
+
+		$common = 0;
+		$max = min(count($from), count($to));
+
+		while ($common < $max && $from[$common] === $to[$common])
+		{
+			$common++;
+		}
+
+		$parts = array_fill(0, count($from) - $common, '..');
+		$parts = array_merge($parts, array_slice($to, $common));
+
+		return implode('/', $parts);
+	}
+
+
+	/**
+	* Split a relative URI into path segments, ignoring empty and '.' parts.
+	*
+	* @access	private
+	* @param	String	$uri
+	* @return	Array
+	*/
+	private function _uri_parts($uri)
+	{
+		$parts = array();
+		$uri = str_replace('\\', '/', (string) $uri);
+
+		foreach (explode('/', trim($uri, '/')) as $part)
+		{
+			if ($part === '' || $part === '.')
+			{
+				continue;
+			}
+
+			if ($part === '..')
+			{
+				array_pop($parts);
+				continue;
+			}
+
+			$parts[] = $part;
+		}
+
+		return $parts;
 	}
 
 	/** 

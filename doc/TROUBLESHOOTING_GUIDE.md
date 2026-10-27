@@ -35,6 +35,35 @@ PHP5=/usr/bin/php5-cgi
 
 You can adapt that to your system.
 
+#### CSS, captcha or links point to 127.0.0.1 when using a reverse proxy
+
+A single fixed `$config['base_url']` cannot be correct for both the internal
+address and the public address. Set it to `auto` instead:
+
+```php
+$config['base_url'] = 'auto';
+```
+
+SNIP then builds the URL from the request and honours the usual proxy headers
+(`X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Forwarded-Port` and
+`X-Forwarded-Prefix`). Your proxy must send them, for example:
+
+```nginx
+location /snip/ {
+    proxy_pass http://127.0.0.1:8075/;   # trailing slash strips /snip/
+    proxy_set_header Host               $http_host;
+    proxy_set_header X-Forwarded-Proto  $scheme;
+    proxy_set_header X-Forwarded-Host   $http_host;
+    proxy_set_header X-Forwarded-Prefix /snip;
+}
+```
+
+See `doc/webserver_sampleconfigs/nginx-site.conf` for a complete example.
+
+If `combine_assets` is enabled, delete the cached files in
+`htdocs/static/asset/` after changing the configuration; older combined CSS
+files may still contain the previous absolute URL.
+
 ### Lighttpd
 
 #### 503 - Service Not Available
